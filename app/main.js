@@ -6,12 +6,13 @@ define([
   'esri/domUtils',
   'esri/arcgis/OAuthInfo',
   'esri/arcgis/Portal',
+  'esri/arcgis/utils',
   'dojo/on',
   'app/components/vtstyleeditor',
   'app/components/itemlist',
   'app/components/notice',
   'dojo/domReady!'
-], function ($, esriConfig, esriId, urlUtils, domUtils, OAuthInfo, arcgisPortal, on, VTStyleEditor, ItemList, notice) {
+], function ($, esriConfig, esriId, urlUtils, domUtils, OAuthInfo, arcgisPortal, arcgisUtils, on, VTStyleEditor, ItemList, notice) {
 
   var mainContainer = document.getElementById('main-container');
   var itemsNode = document.getElementById('items-container');
@@ -42,9 +43,13 @@ define([
     $('[data-toggle="popover"]').popover();
   });
 
+//Full path to local arcgisUtils  
+arcgisUtils.arcgisUrl = "https://myserver.esri.com/portal/sharing/rest/content/items"
+  
   var urlObjects = urlUtils.urlToObject(location.href);
 
-   var portalUrl = 'www.arcgis.com';
+//URL to Portal's Sharing API
+var portalUrl = 'myserver.esri.com/portal/sharing/rest';
    var itemid;
   if (urlObjects.query) {
     portalUrl = urlObjects.query.portal || portalUrl;
@@ -53,8 +58,9 @@ define([
 
   esriConfig.defaults.io.corsEnabledServers.push(portalUrl);
 
-  var info = new OAuthInfo({
-    appId: 'eELUS9Vvk8xP3Kkg',
+//appID for use with OAuth.  Obtained when app is registered with your Portal. 
+var info = new OAuthInfo({
+    appId: 'iPSr1DGTtfYy66Un',
     portalUrl: 'http://' + portalUrl,
     popup: false
   });
@@ -80,16 +86,19 @@ define([
     window.location.reload();
   });
 
+//URL to Portal + Web Adaptor  
+var shortPortalUrl = 'myserver.esri.com/portal';
+  
   function startApplication(user) {
     portal.signIn().then(function() {
 
       domUtils.show(signoutBtn);
       if (itemid) {
-        initStyleEditor(portalUrl, itemid);
+        initStyleEditor(shortPortalUrl, itemid);
       } else {
         portal.queryItems({
-          q: '(type:"Vector Tile Service", owner:"' + user.userId + '") AND NOT typekeywords:"Hosted"',
-          //q: 'type:"vector tiles"',
+          //q: '(type:"Vector Tile Service", owner:"' + user.userId + '") AND NOT typekeywords:"Hosted"',
+          q: 'type:"vector tiles" AND NOT typekeywords:"Hosted"',
           num: 100
         }).then(function (items) {
           if (items.results.length) {
@@ -100,7 +109,7 @@ define([
               e.preventDefault();
               var id = e.target.getAttribute('data-itemid');
               if (id) {
-                initStyleEditor(portalUrl, id);
+                initStyleEditor(shortPortalUrl, id);
               }
             });
           } else {
